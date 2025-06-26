@@ -1,18 +1,51 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import ProductForm from '../components/ProductForm.vue'
 import ProductList from '../components/ProductList.vue'
-//import EditProduct from '@/views/EditProduct.vue'
+import LoginView from '../views/LoginView.vue'
+import { obtenerToken } from '@/services/authService'
 
 const routes = [
   { path: '/', redirect: '/productos' },
-  { path: '/form', name: 'Formulario', component: ProductForm },
-  { path: '/productos', component: ProductList },
-  { path: '/editar/:id', component: ProductForm, props: true }
+  { path: '/login', component: LoginView },
+  {
+    path: '/form',
+    name: 'Formulario',
+    component: ProductForm,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/productos',
+    component: ProductList,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/editar/:id',
+    component: ProductForm,
+    props: true,
+    meta: { requiresAuth: true }
+  }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+router.beforeEach((to, from, next) => {
+  const token = obtenerToken()
+  const requiereAuth = to.matched.some(record => record.meta.requiresAuth)
+
+  if (requiereAuth && !token) {
+    if (to.path !== '/login') {
+      next('/login')
+    } else {
+      next()
+    }
+  } else if (to.path === '/login' && token) {
+    next('/productos') 
+  } else {
+    next()
+  }
 })
 
 export default router
