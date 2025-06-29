@@ -4,17 +4,95 @@
       <h2>Lista de Productos</h2>
       <div class="top-buttons">
         <button v-if="rol !== 'CLIENTE'" class="btn crear" @click="irACrearProducto">Crear Producto</button>
+        <button class="btn filter" @click="abrirModalFiltro" title="Filtros">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon-filter" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z"/>
+          </svg>
+          Filtros
+        </button>
         <button class="btn logout" @click="cerrarSesion">Cerrar Sesión</button>
       </div>
     </div>
 
-    <form @submit.prevent="aplicarFiltros" class="filter-form">
-      <input v-model="filtros.nombre" placeholder="Nombre" />
-      <input v-model="filtros.categoria" placeholder="Categoría" />
-      <input v-model.number="filtros.precioMin" type="number" placeholder="Precio Mínimo" />
-      <input v-model.number="filtros.precioMax" type="number" placeholder="Precio Máximo" />
-      <button type="submit">Buscar</button>
-    </form>
+    <div v-if="mostrarModalFiltro" class="modal-overlay" @click="cerrarModalFiltro">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>Filtrar Productos</h3>
+          <button class="btn-close" @click="cerrarModalFiltro">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon-close" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        
+        <form @submit.prevent="aplicarFiltros" class="modal-form">
+          <div class="form-group">
+            <label for="nombre">Nombre del Producto:</label>
+            <input 
+              id="nombre"
+              v-model="filtros.nombre" 
+              type="text"
+              placeholder="Buscar por nombre..." 
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="categoria">Categoría:</label>
+            <input 
+              id="categoria"
+              v-model="filtros.categoria" 
+              type="text"
+              placeholder="Buscar por categoría..." 
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="precioMin">Precio Mínimo:</label>
+              <input 
+                id="precioMin"
+                v-model.number="filtros.precioMin" 
+                type="number" 
+                step="0.01"
+                min="0"
+                placeholder="0.00" 
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="precioMax">Precio Máximo:</label>
+              <input 
+                id="precioMax"
+                v-model.number="filtros.precioMax" 
+                type="number" 
+                step="0.01"
+                min="0"
+                placeholder="999.99" 
+              />
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn secundario" @click="limpiarFiltros">
+              Limpiar Filtros
+            </button>
+            <button type="submit" class="btn primario">
+              Aplicar Filtros
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div v-if="hayFiltrosActivos" class="filtros-activos">
+      <!--span class="filtro-badge">Filtros aplicados</span-->
+      <button class="btn-limpiar-filtros" @click="limpiarFiltros">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon-small" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Limpiar todos
+      </button>
+    </div>
 
     <table class="product-table">
       <thead>
@@ -61,11 +139,15 @@
         </tr>
       </tbody>
     </table>
+
+    <div v-if="productos.length === 0" class="no-productos">
+      <p>No se encontraron productos con los filtros aplicados.</p>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { logout, obtenerRolDesdeToken } from '@/services/authService'
 import { eliminarProductoPorId, obtenerProductosFiltrados } from '@/services/productoService'
@@ -77,22 +159,58 @@ const filtros = ref({
   precioMin: null,
   precioMax: null
 })
+const mostrarModalFiltro = ref(false)
 const router = useRouter()
 const rol = ref(null)
 
+const hayFiltrosActivos = computed(() => {
+  return filtros.value.nombre || 
+         filtros.value.categoria || 
+         filtros.value.precioMin !== null || 
+         filtros.value.precioMax !== null
+})
+
 onMounted(() => {
   rol.value = obtenerRolDesdeToken()
-  aplicarFiltros()
+  cargarTodosLosProductos()
 })
 
 async function aplicarFiltros() {
   try {
+    console.log("Filtros enviados:", filtros);
     productos.value = await obtenerProductosFiltrados(filtros.value)
+    mostrarModalFiltro.value = false
   } catch (error) {
     console.error('Error al filtrar productos:', error)
   }
 }
 
+async function cargarTodosLosProductos() {
+  try {
+    console.log("Filtros enviados:", filtros);
+    productos.value = await obtenerProductosFiltrados({})
+  } catch (error) {
+    console.error('Error al cargar productos:', error)
+  }
+}
+
+function abrirModalFiltro() {
+  mostrarModalFiltro.value = true
+}
+
+function cerrarModalFiltro() {
+  mostrarModalFiltro.value = false
+}
+
+function limpiarFiltros() {
+  filtros.value = {
+    nombre: '',
+    categoria: '',
+    precioMin: null,
+    precioMax: null
+  }
+  cargarTodosLosProductos() 
+}
 
 async function eliminarProducto(id) {
   if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
@@ -145,7 +263,10 @@ function cerrarSesion() {
   cursor: pointer;
   font-weight: bold;
   font-size: 0.9rem;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .btn.crear {
@@ -157,6 +278,15 @@ function cerrarSesion() {
   background: #059669;
 }
 
+.btn.filter {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn.filter:hover {
+  background: #2563eb;
+}
+
 .btn.logout {
   background: #f87171;
   color: white;
@@ -166,25 +296,176 @@ function cerrarSesion() {
   background: #ef4444;
 }
 
-.filter-form {
+.icon-filter {
+  width: 18px;
+  height: 18px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #374151;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.btn-close:hover {
+  background-color: #f3f4f6;
+}
+
+.icon-close {
+  width: 20px;
+  height: 20px;
+  color: #6b7280;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
   gap: 0.5rem;
-  margin-bottom: 1rem;
 }
 
-.filter-form input {
-  padding: 0.5rem;
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.form-group input {
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn.primario {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn.primario:hover {
+  background: #2563eb;
+}
+
+.btn.secundario {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.btn.secundario:hover {
+  background: #e5e7eb;
+}
+
+.filtros-activos {
+  text-align: left;
+  padding: 0.75rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+}
+
+
+.filtro-badge {
+  background: #3b82f6;
+  color: white;
+  padding: 0.4rem 0.8rem; 
   border-radius: 6px;
-  border: 1px solid #ccc;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
-.filter-form button {
-  padding: 0.6rem 1rem;
-  background-color: #3b82f6;
+
+.btn-limpiar-filtros {
+  background: #f87171;
   color: white;
   border: none;
+  padding: 0.4rem 0.8rem;
   border-radius: 6px;
   cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: background-color 0.2s ease;
+  width: auto; 
+  flex-shrink: 0; 
+}
+
+.btn-limpiar-filtros:hover {
+  background: #ef4444;
+}
+
+.icon-small {
+  width: 14px;
+  height: 14px;
 }
 
 .product-table {
@@ -235,5 +516,37 @@ button {
 button.disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.no-productos {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .top-bar {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .top-buttons {
+    justify-content: center;
+  }
+
+  .modal-content {
+    width: 95%;
+    padding: 1.5rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
 }
 </style>

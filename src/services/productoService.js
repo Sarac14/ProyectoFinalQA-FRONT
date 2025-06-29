@@ -37,17 +37,30 @@ export async function eliminarProductoPorId(id) {
 }
 
 export async function obtenerProductosFiltrados(filtros) {
-  const params = new URLSearchParams()
+  const filters = filtros.value ?? filtros;
 
-  if (filtros.nombre) params.append('nombre', filtros.nombre)
-  if (filtros.categoria) params.append('categoria', filtros.categoria)
-  if (filtros.precioMin != null) params.append('precioMin', filtros.precioMin)
-  if (filtros.precioMax != null) params.append('precioMax', filtros.precioMax)
+  const hasFilters =
+    (filters.nombre && filters.nombre.trim() !== '') ||
+    (filters.categoria && filters.categoria.trim() !== '') ||
+    filters.precioMin != null ||
+    filters.precioMax != null;
 
-  params.append('page', 0)
-  params.append('size', 100)
+  if (!hasFilters) {
+    const response = await axios.get(`${API_URL}`, getAuthHeaders());
+    return response.data; 
+  }
 
-  const response = await axios.get(`${API_URL}/filtro?${params.toString()}`, getAuthHeaders())
-  return response.data.content
+  const params = new URLSearchParams();
+  if (filters.nombre && filters.nombre.trim() !== '') params.append('nombre', filters.nombre);
+  if (filters.categoria && filters.categoria.trim() !== '') params.append('categoria', filters.categoria);
+  if (filters.precioMin != null) params.append('precioMin', filters.precioMin);
+  if (filters.precioMax != null) params.append('precioMax', filters.precioMax);
+  params.append('page', 0);
+  params.append('size', 100);
+
+  const response = await axios.get(`${API_URL}/filtro?${params.toString()}`, getAuthHeaders());
+  return response.data.content;
 }
+
+
 
