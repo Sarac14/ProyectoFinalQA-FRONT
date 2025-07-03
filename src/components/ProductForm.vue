@@ -2,20 +2,28 @@
   <div class="form-container">
     <h2>Crear Producto</h2>
     <form @submit.prevent="guardarProducto">
-      <div class="form-group" v-for="key in camposTexto" :key="key">
-        <label :for="key">{{ key.charAt(0).toUpperCase() + key.slice(1) }}</label>
-        <template v-if="key === 'descripcion'">
-          <textarea :id="key" v-model="producto[key]" required></textarea>
-        </template>
-        <template v-else>
-          <input
-            :id="key"
-            v-model="producto[key]"
-            type="text"
-            required
-          />
-        </template>
-      </div>
+    <div class="form-group spaced" v-for="key in camposTexto" :key="key">
+      <label :for="key">{{ key.charAt(0).toUpperCase() + key.slice(1) }}</label>
+      <template v-if="key === 'descripcion'">
+        <textarea :id="key" v-model="producto[key]" required></textarea>
+      </template>
+      <template v-else-if="key === 'categoria'">
+        <select :id="key" v-model="producto[key]" required>
+          <option disabled value="">Seleccione una categoría</option>
+          <option v-for="cat in categoriasDisponibles" :key="cat" :value="cat">{{ cat }}</option>
+        </select>
+      </template>
+      <template v-else>
+        <input
+          :id="key"
+          v-model="producto[key]"
+          type="text"
+          required
+        />
+      </template>
+    </div>
+
+
 
       <div class="form-grid">
         <div class="form-group spaced">
@@ -39,7 +47,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { crearProducto, obtenerProductoPorId, actualizarProducto } from '@/services/productoService'
+import { crearProducto, obtenerProductoPorId, actualizarProducto, obtenerCategorias  } from '@/services/productoService'
 import '@/styles/form.css'
 
 const route = useRoute()
@@ -57,8 +65,10 @@ const camposTexto = ['nombre', 'descripcion', 'categoria']
 
 const mensaje = ref('')
 const modoEdicion = ref(false)
+const categoriasDisponibles = ref([])
 
 onMounted(async () => {
+  categoriasDisponibles.value = await obtenerCategorias()
   const id = route.params.id
   if (id) {
     modoEdicion.value = true

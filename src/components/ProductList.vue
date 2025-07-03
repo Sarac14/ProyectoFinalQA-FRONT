@@ -10,6 +10,12 @@
           </svg>
           Filtros
         </button>
+        <button 
+          v-if="rol === 'ADMIN'" 
+          class="btn historial" 
+          @click="irAHistorial">
+          Ver Historial
+        </button>
         <button class="btn logout" @click="cerrarSesion">Cerrar Sesión</button>
       </div>
     </div>
@@ -38,13 +44,18 @@
 
           <div class="form-group">
             <label for="categoria">Categoría:</label>
-            <input 
+            <select 
               id="categoria"
-              v-model="filtros.categoria" 
-              type="text"
-              placeholder="Buscar por categoría..." 
-            />
+              v-model="filtros.categoria"
+              required
+            >
+              <option value="">Todas las categorías</option>
+              <option v-for="cat in categoriasDisponibles" :key="cat" :value="cat">
+                {{ cat.charAt(0) + cat.slice(1).toLowerCase() }}
+              </option>
+            </select>
           </div>
+
 
           <div class="form-row">
             <div class="form-group">
@@ -150,7 +161,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { logout, obtenerRolDesdeToken } from '@/services/authService'
-import { eliminarProductoPorId, obtenerProductosFiltrados } from '@/services/productoService'
+import { eliminarProductoPorId, obtenerProductosFiltrados, obtenerCategorias  } from '@/services/productoService'
 
 const productos = ref([])
 const filtros = ref({
@@ -162,6 +173,11 @@ const filtros = ref({
 const mostrarModalFiltro = ref(false)
 const router = useRouter()
 const rol = ref(null)
+const categoriasDisponibles = ref([])
+
+onMounted(async () => {
+  categoriasDisponibles.value = await obtenerCategorias()
+})
 
 const hayFiltrosActivos = computed(() => {
   return filtros.value.nombre || 
@@ -227,6 +243,11 @@ function irACrearProducto() {
   router.push('/form')
 }
 
+function irAHistorial() {
+  router.push('/historial')
+}
+
+
 function cerrarSesion() {
   logout()
   router.push('/login')
@@ -254,6 +275,7 @@ function cerrarSesion() {
 .top-buttons {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .btn {
@@ -363,6 +385,31 @@ function cerrarSesion() {
   flex-direction: column;
   gap: 1.5rem;
 }
+
+.modal-form select {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background-color: #ffffff;
+  color: #1f2937;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.25rem;
+}
+
+.modal-form select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
 
 .form-group {
   display: flex;
@@ -512,6 +559,16 @@ button {
   padding: 0.3rem;
   cursor: pointer;
 }
+
+.btn.historial {
+  background: #fbbf24;
+  color: white;
+}
+
+.btn.historial:hover {
+  background: #f59e0b;
+}
+
 
 button.disabled {
   opacity: 0.4;

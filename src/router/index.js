@@ -3,6 +3,8 @@ import ProductForm from '../components/ProductForm.vue'
 import ProductList from '../components/ProductList.vue'
 import LoginView from '../views/LoginView.vue'
 import { obtenerToken } from '@/services/authService'
+import HistorialPlaceholder from '../components/HistorialPlaceholder.vue'
+
 
 const routes = [
   { path: '/', redirect: '/productos' },
@@ -22,6 +24,11 @@ const routes = [
     path: '/editar/:id',
     component: ProductForm,
     props: true,
+    meta: { requiresAuth: true }
+  },
+    {
+    path: '/historial',
+    component: HistorialPlaceholder,
     meta: { requiresAuth: true }
   }
 ]

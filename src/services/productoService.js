@@ -62,5 +62,10 @@ export async function obtenerProductosFiltrados(filtros) {
   return response.data.content;
 }
 
+export async function obtenerCategorias() {
+  const response = await axios.get(`${API_URL}/categorias`, getAuthHeaders());
+  return response.data
+}
+
 
 
