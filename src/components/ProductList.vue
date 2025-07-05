@@ -3,20 +3,64 @@
     <div class="top-bar">
       <h2>Lista de Productos</h2>
       <div class="top-buttons">
-        <button v-if="rol !== 'CLIENTE'" class="btn crear" @click="irACrearProducto">Crear Producto</button>
-        <button class="btn filter" @click="abrirModalFiltro" title="Filtros">
-          <svg xmlns="http://www.w3.org/2000/svg" class="icon-filter" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button v-if="rol !== 'CLIENTE'" class="btn btn-create" @click="irACrearProducto">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          Crear
+        </button>
+        <button class="btn btn-filter" @click="abrirModalFiltro">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z"/>
           </svg>
           Filtros
         </button>
-        <button 
-          v-if="rol === 'ADMIN'" 
-          class="btn historial" 
-          @click="irAHistorial">
-          Ver Historial
+        <template v-if="rol === 'ADMIN'">
+          <div class="dropdown">
+            <button class="btn btn-admin" @click="toggleAdminMenu">
+              <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Admin
+            </button>
+            <div v-if="mostrarMenuAdmin" class="dropdown-menu">
+              <button class="dropdown-item" @click="irAHistorial">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-small" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Historial
+              </button>
+              <button class="dropdown-item" @click="irAUsuarios">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-small" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                Usuarios
+              </button>
+            </div>
+          </div>
+        </template>
+        <button class="btn btn-logout" @click="cerrarSesion">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Salir
         </button>
-        <button class="btn logout" @click="cerrarSesion">Cerrar Sesión</button>
+      </div>
+    </div>
+
+    <div class="search-container">
+      <div class="search-box">
+        <svg xmlns="http://www.w3.org/2000/svg" class="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          v-model="terminoBusqueda"
+          @input="buscarProductos"
+          type="text"
+          placeholder="Buscar productos por nombre, descripción o categoría..."
+          class="search-input"
+        />
       </div>
     </div>
 
@@ -24,11 +68,7 @@
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h3>Filtrar Productos</h3>
-          <button class="btn-close" @click="cerrarModalFiltro">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon-close" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-          </button>
+          <button class="btn-close" @click="cerrarModalFiltro">×</button>
         </div>
         
         <form @submit.prevent="aplicarFiltros" class="modal-form">
@@ -47,7 +87,6 @@
             <select 
               id="categoria"
               v-model="filtros.categoria"
-              required
             >
               <option value="">Todas las categorías</option>
               <option v-for="cat in categoriasDisponibles" :key="cat" :value="cat">
@@ -55,7 +94,6 @@
               </option>
             </select>
           </div>
-
 
           <div class="form-row">
             <div class="form-group">
@@ -84,10 +122,10 @@
           </div>
 
           <div class="modal-actions">
-            <button type="button" class="btn secundario" @click="limpiarFiltros">
+            <button type="button" class="btn btn-secondary" @click="limpiarFiltros">
               Limpiar Filtros
             </button>
-            <button type="submit" class="btn primario">
+            <button type="submit" class="btn btn-primary">
               Aplicar Filtros
             </button>
           </div>
@@ -96,63 +134,81 @@
     </div>
 
     <div v-if="hayFiltrosActivos" class="filtros-activos">
-      <!--span class="filtro-badge">Filtros aplicados</span-->
       <button class="btn-limpiar-filtros" @click="limpiarFiltros">
         <svg xmlns="http://www.w3.org/2000/svg" class="icon-small" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
         </svg>
-        Limpiar todos
+        Limpiar filtros
       </button>
     </div>
 
-    <table class="product-table">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Descripción</th>
-          <th>Categoría</th>
-          <th>Precio</th>
-          <th>Cantidad</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="producto in productos" :key="producto.id">
-          <td>{{ producto.nombre }}</td>
-          <td>{{ producto.descripcion }}</td>
-          <td>{{ producto.categoria }}</td>
-          <td>${{ producto.precio.toFixed(2) }}</td>
-          <td>{{ producto.cantidad }}</td>
-          <td class="acciones">
-            <button
-              @click="editarProducto(producto.id)"
-              title="Editar"
-              :disabled="rol === 'CLIENTE'"
-              :class="{ disabled: rol === 'CLIENTE' }"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M15.232 5.232l3.536 3.536M9 11l6-6m2 2l-6 6M6 18h.01M6 18l3-3m0 0l9-9m0 0a2.121 2.121 0 113-3 2.121 2.121 0 01-3 3z"/>
-              </svg>
-            </button>
-            <button
-              @click="eliminarProducto(producto.id)"
-              title="Eliminar"
-              :disabled="rol === 'CLIENTE'"
-              :class="{ disabled: rol === 'CLIENTE' }"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="icon delete" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H9a1 1 0 00-1 1v3h10z"/>
-              </svg>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-
+    <div class="table-container">
+      <table class="product-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Categoría</th>
+            <th>Precio</th>
+            <th>Cantidad</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="producto in productos" :key="producto.id">
+            <td class="font-medium">{{ producto.nombre }}</td>
+            <td class="text-gray">{{ producto.descripcion }}</td>
+            <td>
+              <span class="category-badge">{{ producto.categoria }}</span>
+            </td>
+            <td class="font-medium">${{ producto.precio.toFixed(2) }}</td>
+            <td>
+              <span :class="['stock-badge', producto.cantidad < 10 ? 'low-stock' : 'normal-stock']">
+                {{ producto.cantidad }}
+              </span>
+            </td>
+            <td class="acciones">
+              <button
+                @click="editarProducto(producto.id)"
+                title="Editar"
+                :disabled="rol === 'CLIENTE'"
+                class="action-btn edit-btn"
+                :class="{ disabled: rol === 'CLIENTE' }"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-action" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 11l6-6m2 2l-6 6M6 18h.01M6 18l3-3m0 0l9-9m0 0a2.121 2.121 0 113-3 2.121 2.121 0 01-3 3z"/>
+                </svg>
+              </button>
+              <button
+                @click="eliminarProducto(producto.id)"
+                title="Eliminar"
+                :disabled="rol === 'CLIENTE'"
+                class="action-btn delete-btn"
+                :class="{ disabled: rol === 'CLIENTE' }"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon-action" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1H9a1 1 0 00-1 1v3h10z"/>
+                </svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pagination-controls">
+        <button @click="paginaAnterior" :disabled="paginaActual === 0">
+          ⬅ Anterior
+        </button>
+        <span>Página {{ paginaActual + 1 }} de {{ totalPaginas }}</span>
+        <button @click="siguientePagina" :disabled="paginaActual >= totalPaginas - 1">
+          Siguiente ➡
+        </button>
+      </div>
+    </div>
     <div v-if="productos.length === 0" class="no-productos">
-      <p>No se encontraron productos con los filtros aplicados.</p>
+      <svg xmlns="http://www.w3.org/2000/svg" class="empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+      </svg>
+      <p>No se encontraron productos</p>
     </div>
   </div>
 </template>
@@ -161,7 +217,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { logout, obtenerRolDesdeToken } from '@/services/authService'
-import { eliminarProductoPorId, obtenerProductosFiltrados, obtenerCategorias  } from '@/services/productoService'
+import { eliminarProductoPorId, obtenerProductosFiltrados, obtenerCategorias, obtenerProductosPaginados  } from '@/services/productoService'
 
 const productos = ref([])
 const filtros = ref({
@@ -174,37 +230,92 @@ const mostrarModalFiltro = ref(false)
 const router = useRouter()
 const rol = ref(null)
 const categoriasDisponibles = ref([])
-
-onMounted(async () => {
-  categoriasDisponibles.value = await obtenerCategorias()
-})
+const mostrarMenuAdmin = ref(false)
+const terminoBusqueda = ref('')
+const timeoutBusqueda = ref(null)
+const paginaActual = ref(0)
+const totalPaginas = ref(0)
+const tamanoPagina = ref(10)
 
 const hayFiltrosActivos = computed(() => {
   return filtros.value.nombre || 
          filtros.value.categoria || 
          filtros.value.precioMin !== null || 
-         filtros.value.precioMax !== null
+         filtros.value.precioMax !== null ||
+         terminoBusqueda.value
 })
 
-onMounted(() => {
-  rol.value = obtenerRolDesdeToken()
-  cargarTodosLosProductos()
-})
+onMounted(async () => {
+  rol.value = obtenerRolDesdeToken();
+  await cargarProductosPaginados();
+  try {
+    categoriasDisponibles.value = await obtenerCategorias();
+  } catch (error) {
+    console.error('Error al cargar categorías:', error);
+  }
+});
 
 async function aplicarFiltros() {
   try {
-    console.log("Filtros enviados:", filtros);
-    productos.value = await obtenerProductosFiltrados(filtros.value)
+    const filtrosBusqueda = {
+      ...filtros.value,
+      busqueda: terminoBusqueda.value
+    }
+    const response = await obtenerProductosFiltrados(filtrosBusqueda)
+    productos.value = response.content || response
     mostrarModalFiltro.value = false
   } catch (error) {
     console.error('Error al filtrar productos:', error)
   }
 }
 
+async function cargarProductosPaginados() {
+  try {
+    const response = await obtenerProductosPaginados(paginaActual.value, tamanoPagina.value);
+    productos.value = response.content;
+    totalPaginas.value = response.totalPages;
+  } catch (error) {
+    console.error('Error al cargar productos paginados:', error);
+  }
+}
+
+function siguientePagina() {
+  if (paginaActual.value < totalPaginas.value - 1) {
+    paginaActual.value++;
+    cargarProductosPaginados();
+  }
+}
+
+function paginaAnterior() {
+  if (paginaActual.value > 0) {
+    paginaActual.value--;
+    cargarProductosPaginados();
+  }
+}
+
+function buscarProductos() {
+  if (timeoutBusqueda.value) {
+    clearTimeout(timeoutBusqueda.value)
+  }
+  
+  timeoutBusqueda.value = setTimeout(async () => {
+    try {
+      const filtrosBusqueda = {
+        ...filtros.value,
+        busqueda: terminoBusqueda.value
+      }
+      const response = await obtenerProductosFiltrados(filtrosBusqueda)
+      productos.value = response.content || response
+    } catch (error) {
+      console.error('Error al buscar productos:', error)
+    }
+  }, 300)
+}
+
 async function cargarTodosLosProductos() {
   try {
-    console.log("Filtros enviados:", filtros);
-    productos.value = await obtenerProductosFiltrados({})
+    const response = await obtenerProductosFiltrados({})
+    productos.value = response.content || response
   } catch (error) {
     console.error('Error al cargar productos:', error)
   }
@@ -225,13 +336,22 @@ function limpiarFiltros() {
     precioMin: null,
     precioMax: null
   }
+  terminoBusqueda.value = ''
+  if (timeoutBusqueda.value) {
+    clearTimeout(timeoutBusqueda.value)
+  }
   cargarTodosLosProductos() 
 }
 
 async function eliminarProducto(id) {
   if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
     await eliminarProductoPorId(id)
-    await aplicarFiltros()
+    const filtrosBusqueda = {
+      ...filtros.value,
+      busqueda: terminoBusqueda.value
+    }
+    const response = await obtenerProductosFiltrados(filtrosBusqueda)
+    productos.value = response.content || response
   }
 }
 
@@ -245,8 +365,17 @@ function irACrearProducto() {
 
 function irAHistorial() {
   router.push('/historial')
+  mostrarMenuAdmin.value = false
 }
 
+function toggleAdminMenu() {
+  mostrarMenuAdmin.value = !mostrarMenuAdmin.value
+}
+
+function irAUsuarios() {
+  router.push('/admin/usuarios')
+  mostrarMenuAdmin.value = false
+}
 
 function cerrarSesion() {
   logout()
@@ -256,71 +385,361 @@ function cerrarSesion() {
 
 <style scoped>
 .list-container {
-  max-width: 1000px;
-  margin: 2rem auto;
+  max-width: 95vw;
+  min-height: 90vh;
+  margin: 1rem auto;
   padding: 2rem;
-  background: #f9fafb;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.top-bar h2 {
+  margin: 0;
+  color: #1e293b;
+  font-size: 1.875rem;
+  font-weight: 600;
 }
 
 .top-buttons {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
 }
 
 .btn {
-  padding: 0.6rem 1rem;
+  padding: 0.5rem 1rem;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-weight: bold;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  white-space: nowrap;
 }
 
-.btn.crear {
+.btn-create {
   background: #10b981;
   color: white;
 }
 
-.btn.crear:hover {
+.btn-create:hover {
   background: #059669;
+  transform: translateY(-1px);
 }
 
-.btn.filter {
+.btn-filter {
   background: #3b82f6;
   color: white;
 }
 
-.btn.filter:hover {
+.btn-filter:hover {
   background: #2563eb;
+  transform: translateY(-1px);
 }
 
-.btn.logout {
-  background: #f87171;
+.btn-admin {
+  background: #f59e0b;
   color: white;
 }
 
-.btn.logout:hover {
-  background: #ef4444;
+.btn-admin:hover {
+  background: #d97706;
+  transform: translateY(-1px);
 }
 
-.icon-filter {
+.btn-logout {
+  background: #ef4444;
+  color: white;
+}
+
+.btn-logout:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-small {
+  width: 14px;
+  height: 14px;
+}
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 150px;
+  z-index: 100;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+  transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+  background: #f8fafc;
+}
+
+.dropdown-item:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.dropdown-item:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.filtros-activos {
+  margin-bottom: 1.5rem;
+}
+
+.btn-limpiar-filtros {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.btn-limpiar-filtros:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.product-table th {
+  background: #f8fafc;
+  color: #374151;
+  font-weight: 600;
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.875rem;
+}
+
+.product-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.875rem;
+}
+
+.product-table tr:hover {
+  background: #f8fafc;
+}
+
+.font-medium {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.text-gray {
+  color: #64748b;
+}
+
+.category-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #e0e7ff;
+  color: #3730a3;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.stock-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.normal-stock {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.low-stock {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.acciones {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* .action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+} */
+
+.edit-btn {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.edit-btn:hover:not(.disabled) {
+  background: #bae6fd;
+  transform: scale(1.05);
+}
+
+.delete-btn {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.delete-btn:hover:not(.disabled) {
+  background: #fecaca;
+  transform: scale(1.05);
+}
+
+.action-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.icon-action {
+  width: 16px;
+  height: 16px;
+}
+
+.no-productos {
+  text-align: center;
+  padding: 3rem;
+  color: #64748b;
+}
+
+.empty-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1rem;
+  color: #cbd5e1;
+}
+
+.search-container {
+  margin-bottom: 1.5rem;
+}
+
+.search-box {
+  position: relative;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 2.5rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: white;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
   width: 18px;
   height: 18px;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.clear-search {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  color: #6b7280;
+  transition: all 0.2s ease;
+}
+
+.clear-search:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.clear-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .modal-overlay {
@@ -329,7 +748,7 @@ function cerrarSesion() {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -359,25 +778,24 @@ function cerrarSesion() {
 .modal-header h3 {
   margin: 0;
   color: #374151;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .btn-close {
   background: none;
   border: none;
+  font-size: 1.5rem;
   cursor: pointer;
+  color: #6b7280;
   padding: 0.25rem;
   border-radius: 4px;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s;
 }
 
 .btn-close:hover {
-  background-color: #f3f4f6;
-}
-
-.icon-close {
-  width: 20px;
-  height: 20px;
-  color: #6b7280;
+  background: #f3f4f6;
+  color: #374151;
 }
 
 .modal-form {
@@ -385,31 +803,6 @@ function cerrarSesion() {
   flex-direction: column;
   gap: 1.5rem;
 }
-
-.modal-form select {
-  width: 100%;
-  padding: 0.875rem 1rem;
-  font-size: 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  background-color: #ffffff;
-  color: #1f2937;
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  background-size: 1.25rem;
-}
-
-.modal-form select:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
 
 .form-group {
   display: flex;
@@ -426,21 +819,32 @@ function cerrarSesion() {
 .form-group label {
   font-weight: 600;
   color: #374151;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
   padding: 0.75rem;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 0.9rem;
-  transition: border-color 0.2s ease;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group select {
+  background-color: white;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
 }
 
 .modal-actions {
@@ -452,137 +856,72 @@ function cerrarSesion() {
   border-top: 1px solid #e5e7eb;
 }
 
-.btn.primario {
+.btn-primary {
   background: #3b82f6;
   color: white;
 }
 
-.btn.primario:hover {
+.btn-primary:hover {
   background: #2563eb;
 }
 
-.btn.secundario {
+.btn-secondary {
   background: #f3f4f6;
   color: #374151;
   border: 1px solid #d1d5db;
 }
 
-.btn.secundario:hover {
+.btn-secondary:hover {
   background: #e5e7eb;
 }
 
-.filtros-activos {
-  text-align: left;
-  padding: 0.75rem;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 8px;
-}
-
-
-.filtro-badge {
-  background: #3b82f6;
-  color: white;
-  padding: 0.4rem 0.8rem; 
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-
-.btn-limpiar-filtros {
-  background: #f87171;
-  color: white;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.8rem;
+.pagination-controls {
   display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 0.25rem;
-  transition: background-color 0.2s ease;
-  width: auto; 
-  flex-shrink: 0; 
+  margin-top: 16px;
+  gap: 12px;
+  font-family: 'Segoe UI', sans-serif;
 }
 
-.btn-limpiar-filtros:hover {
-  background: #ef4444;
-}
-
-.icon-small {
-  width: 14px;
-  height: 14px;
-}
-
-.product-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0 10px;
-}
-
-.product-table th {
-  text-align: left;
-  font-size: 0.9rem;
-  color: #6b7280;
-  padding: 0.75rem 1rem;
-}
-
-.product-table td {
-  background-color: white;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  font-size: 0.95rem;
-  color: #374151;
-  vertical-align: middle;
-}
-
-.acciones {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.icon {
-  width: 20px;
-  height: 20px;
-  color: #3b82f6;
-  transition: transform 0.2s ease;
-}
-
-.icon.delete {
-  color: #ef4444;
-}
-
-button {
-  background: transparent;
-  border: none;
-  padding: 0.3rem;
-  cursor: pointer;
-}
-
-.btn.historial {
-  background: #fbbf24;
+.pagination-controls button {
+  padding: 10px 10px; 
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
   color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem; 
+  transition: background 0.3s, transform 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.btn.historial:hover {
-  background: #f59e0b;
+.pagination-controls button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  transform: translateY(-1px);
 }
 
-
-button.disabled {
-  opacity: 0.4;
+.pagination-controls button:disabled {
+  background: #cbd5e1;
+  color: #64748b;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
-.no-productos {
-  text-align: center;
-  padding: 2rem;
-  color: #6b7280;
-  font-style: italic;
+.pagination-controls span {
+  font-weight: 500;
+  font-size: 0.9rem; 
+  color: #374151;
 }
+
 
 @media (max-width: 768px) {
+  .list-container {
+    margin: 0.5rem;
+    padding: 1rem;
+  }
+
   .top-bar {
     flex-direction: column;
     gap: 1rem;
@@ -590,20 +929,27 @@ button.disabled {
   }
 
   .top-buttons {
+    flex-wrap: wrap;
     justify-content: center;
-  }
-
-  .modal-content {
-    width: 95%;
-    padding: 1.5rem;
   }
 
   .form-row {
     grid-template-columns: 1fr;
   }
 
-  .modal-actions {
-    flex-direction: column;
+  .search-input {
+    padding: 0.75rem 1rem 0.75rem 2.25rem;
+    font-size: 0.8rem;
+  }
+
+  .search-icon {
+    left: 0.5rem;
+    width: 16px;
+    height: 16px;
+  }
+
+  .clear-search {
+    right: 0.5rem;
   }
 }
 </style>

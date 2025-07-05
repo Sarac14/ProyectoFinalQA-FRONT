@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { jwtDecode } from 'jwt-decode'  
 
-const API_URL = 'http://localhost:8000/api/auth'
+const API_URL = 'http://localhost:8080/api/auth'
 
 export async function login(email, password) {
   const response = await axios.post(`${API_URL}/login`, { email, password })
@@ -10,7 +10,6 @@ export async function login(email, password) {
 
 export function guardarToken(token) {
   localStorage.setItem('token', token.jwtToken)
-  localStorage.setItem('refreshToken', token.refreshToken)
 }
 
 

@@ -1,10 +1,11 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import ProductForm from '../components/ProductForm.vue'
-import ProductList from '../components/ProductList.vue'
-import LoginView from '../views/LoginView.vue'
-import { obtenerToken } from '@/services/authService'
-import HistorialPlaceholder from '../components/HistorialPlaceholder.vue'
+import { createRouter, createWebHistory } from 'vue-router';
+import ProductForm from '../components/ProductForm.vue';
+import ProductList from '../components/ProductList.vue';
+import LoginView from '../views/LoginView.vue';
+import HistorialPlaceholder from '../components/HistorialPlaceholder.vue';
+import UserAdminView from '../views/UserAdminView.vue';
 
+import { obtenerToken } from '@/services/authService';
 
 const routes = [
   { path: '/', redirect: '/productos' },
@@ -26,33 +27,38 @@ const routes = [
     props: true,
     meta: { requiresAuth: true }
   },
-    {
+  {
     path: '/historial',
     component: HistorialPlaceholder,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/usuarios',
+    component: UserAdminView,
+    meta: { requiresAuth: true } 
   }
-]
+];
 
 const router = createRouter({
   history: createWebHistory(),
   routes
-})
+});
 
 router.beforeEach((to, from, next) => {
-  const token = obtenerToken()
-  const requiereAuth = to.matched.some(record => record.meta.requiresAuth)
+  const token = obtenerToken();
+  const requiereAuth = to.matched.some(record => record.meta.requiresAuth);
 
   if (requiereAuth && !token) {
     if (to.path !== '/login') {
-      next('/login')
+      next('/login');
     } else {
-      next()
+      next();
     }
   } else if (to.path === '/login' && token) {
-    next('/productos') 
+    next('/productos');
   } else {
-    next()
+    next();
   }
-})
+});
 
-export default router
+export default router;
