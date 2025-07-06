@@ -12,8 +12,8 @@ function getAuthHeaders() {
   }
 }
 
-export const obtenerUsuarios = async () => {
-  const response = await axios.get(API_URL, getAuthHeaders());
+export const obtenerUsuarios = async (page = 0, size = 10) => {
+  const response = await axios.get(`${API_URL}?page=${page}&size=${size}`, getAuthHeaders());
   return response.data;
 };
 

@@ -69,6 +69,16 @@
       </table>
     </div>
 
+    <div class="pagination-controls">
+      <button @click="paginaAnterior" :disabled="page === 0">
+        ⬅ Anterior
+      </button>
+      <span>Página {{ page + 1 }} de {{ totalPaginas }}</span>
+      <button @click="siguientePagina" :disabled="page >= totalPaginas - 1">
+        Siguiente ➡
+      </button>
+    </div>
+
     <div v-if="!usuarios.length" class="empty-state">
       <p>No hay usuarios registrados</p>
     </div>
@@ -115,13 +125,13 @@
             />
           </div>
           <div class="form-group">
-            <label>ID Rol</label>
-            <input 
-              v-model="nuevoUsuario.idRol" 
-              placeholder="ID del rol" 
-              required 
-              type="number" 
-            />
+            <label>Rol</label>
+            <select v-model="nuevoUsuario.idRol" required>
+              <option value="" disabled selected></option>
+              <option v-for="rol in roles" :key="rol.id" :value="rol.id">
+                {{ rol.nombre }}
+              </option>
+            </select>
           </div>
           <div class="form-actions">
             <button type="button" @click="mostrarCrear = false" class="btn btn-secondary">
@@ -132,6 +142,7 @@
             </button>
           </div>
         </form>
+        <p v-if="mensaje" :class="['mensaje', esError ? 'error' : 'success']">{{ mensaje }}</p>
       </div>
     </div>
   </div>
@@ -140,8 +151,17 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { obtenerUsuarios, crearUsuario, actualizarEstadoUsuario, eliminarUsuario } from '@/services/usuarioService';
+import { obtenerRoles } from '@/services/rolService';
+
 
 const usuarios = ref([]);
+const totalPaginas = ref(0);
+const page = ref(0);
+const size = ref(10); 
+const roles = ref([])
+const mensaje = ref('');
+const esError = ref(false);
+
 const mostrarCrear = ref(false);
 const nuevoUsuario = ref({
   nombre: '',
@@ -151,13 +171,37 @@ const nuevoUsuario = ref({
   idRol: ''
 });
 
+onMounted(async () => {
+  roles.value = await obtenerRoles();
+});
+
+
 const cargarUsuarios = async () => {
-  usuarios.value = await obtenerUsuarios();
+  const data = await obtenerUsuarios(page.value, size.value);
+  usuarios.value = data.content;
+  totalPaginas.value = data.totalPages;
 };
 
 const crear = async () => {
-  await crearUsuario(nuevoUsuario.value);
-  mostrarCrear.value = false;
+  try {
+    await crearUsuario(nuevoUsuario.value);
+    mensaje.value = 'Usuario creado exitosamente.';
+    esError.value = false;
+    mostrarCrear.value = false;
+    resetNuevoUsuario();
+    await cargarUsuarios();
+  } catch (error) {
+    console.error(error);
+    esError.value = true;
+    if (error.response && error.response.data && error.response.data.message) {
+      mensaje.value = error.response.data.message;
+    } else {
+      mensaje.value = 'Ocurrió un error al crear el usuario.';
+    }
+  }
+};
+
+const resetNuevoUsuario = () => {
   nuevoUsuario.value = {
     nombre: '',
     apellido: '',
@@ -165,7 +209,6 @@ const crear = async () => {
     password: '',
     idRol: ''
   };
-  await cargarUsuarios();
 };
 
 const bloquearUsuario = async (usuario) => {
@@ -185,8 +228,23 @@ const eliminar = async (id) => {
   }
 };
 
+const siguientePagina = async () => {
+  if (page.value + 1 < totalPaginas.value) {
+    page.value++;
+    await cargarUsuarios();
+  }
+};
+
+const paginaAnterior = async () => {
+  if (page.value > 0) {
+    page.value--;
+    await cargarUsuarios();
+  }
+};
+
 onMounted(cargarUsuarios);
 </script>
+
 
 <style scoped>
 .user-admin-container {
@@ -490,6 +548,66 @@ onMounted(cargarUsuarios);
   justify-content: flex-end;
   margin-top: 2rem;
 }
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 16px;
+  gap: 12px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.pagination-controls button {
+  padding: 10px 10px; 
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem; 
+  transition: background 0.3s, transform 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-controls button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  transform: translateY(-1px);
+}
+
+.pagination-controls button:disabled {
+  background: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.pagination-controls span {
+  font-weight: 500;
+  font-size: 0.9rem; 
+  color: #374151;
+}
+
+.mensaje {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.mensaje.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.mensaje.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
 
 @media (max-width: 768px) {
   .user-admin-container {

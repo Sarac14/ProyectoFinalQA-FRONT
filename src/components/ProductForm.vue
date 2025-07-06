@@ -40,7 +40,7 @@
       <button type="submit">Guardar</button>
     </form>
 
-    <p v-if="mensaje" :class="['mensaje', mensaje.includes('error') ? 'error' : 'success']">{{ mensaje }}</p>
+    <p v-if="mensaje" :class="['mensaje', esError ? 'error' : 'success']">{{ mensaje }}</p>
   </div>
 </template>
 
@@ -66,6 +66,8 @@ const camposTexto = ['nombre', 'descripcion', 'categoria']
 const mensaje = ref('')
 const modoEdicion = ref(false)
 const categoriasDisponibles = ref([])
+const esError = ref(false);
+
 
 onMounted(async () => {
   categoriasDisponibles.value = await obtenerCategorias()
@@ -82,14 +84,20 @@ async function guardarProducto() {
     if (modoEdicion.value) {
       await actualizarProducto(route.params.id, producto.value)
       mensaje.value = 'Producto actualizado correctamente.'
+      esError.value = false;
     } else {
       await crearProducto(producto.value)
       mensaje.value = 'Producto creado exitosamente.'
     }
     setTimeout(() => router.push('/productos'), 1000)
   } catch (error) {
-    console.error(error)
-    mensaje.value = 'Ocurrió un error al guardar.'
+    esError.value = true;
+    console.error(error);
+    if (error.response && error.response.data && error.response.data.message) {
+      mensaje.value = error.response.data.message;
+    } else {
+      mensaje.value = 'Ocurrió un error al guardar.';
+    }
   }
 }
 </script>
