@@ -15,6 +15,12 @@
           </svg>
           Filtros
         </button>
+        <button class="btn btn-dashboard" @click="irADashboard">
+          <svg xmlns="http://www.w3.org/2000/svg" class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z"/>
+          </svg>
+          Dashboard
+        </button>
         <template v-if="rol === 'ADMIN'">
           <div class="dropdown">
             <button class="btn btn-admin" @click="toggleAdminMenu">
@@ -46,6 +52,38 @@
           </svg>
           Salir
         </button>
+      </div>
+    </div>
+
+    <div class="dashboard-metrics">
+      <div class="card-metric">
+        <h3>Total de productos</h3>
+        <p>{{ metricas.totalProductos }}</p>
+      </div>
+      <div 
+        class="card-metric warning tooltip-wrapper" 
+        @mouseenter="mostrandoTooltipStock = true" 
+        @mouseleave="mostrandoTooltipStock = false"
+      >
+        <h3>Stock bajo</h3>
+        <p>{{ metricas.stockBajo }}</p>
+
+        <div v-if="mostrandoTooltipStock" class="tooltip-stock-list">
+          <h4>Productos con stock bajo:</h4>
+          <ul>
+            <li v-for="prod in productosStockBajo" :key="prod.id">
+              {{ prod.nombre }} ({{ prod.cantidad }})
+            </li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="dashboard-activity">
+      <div class="activity-card">
+        <h4>Top productos por actividad</h4>
+        <canvas id="actividadChart"></canvas>
       </div>
     </div>
 
@@ -217,7 +255,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { logout, obtenerRolDesdeToken } from '@/services/authService'
-import { eliminarProductoPorId, obtenerProductosFiltrados, obtenerCategorias, obtenerProductosPaginados  } from '@/services/productoService'
+import { eliminarProductoPorId, obtenerProductosFiltrados, obtenerCategorias, obtenerProductosPaginados, obtenerMetricasDashboard, obtenerProductosConStockBajo } from '@/services/productoService'
+import Chart from 'chart.js/auto'
 
 const productos = ref([])
 const filtros = ref({
@@ -236,6 +275,63 @@ const timeoutBusqueda = ref(null)
 const paginaActual = ref(0)
 const totalPaginas = ref(0)
 const tamanoPagina = ref(10)
+const productosStockBajo = ref([])
+const mostrandoTooltipStock = ref(false)
+
+const metricas = ref({
+  totalProductos: 0,
+  stockBajo: 0,
+  topActividad: []
+})
+
+async function cargarMetricas() {
+  try {
+    const data = await obtenerMetricasDashboard()
+    metricas.value = data
+    renderActividadChart()
+  } catch (error) {
+    console.error('Error al cargar métricas:', error)
+  }
+}
+
+async function cargarProductosConStockBajo() {
+  try {
+    productosStockBajo.value = await obtenerProductosConStockBajo()
+  } catch (error) {
+    console.error('Error al cargar productos con stock bajo:', error)
+  }
+}
+
+function renderActividadChart() {
+  const labels = metricas.value.topActividad.map(p => p.nombre)
+  const data = metricas.value.topActividad.map(p => p.cantidad)
+
+  new Chart(document.getElementById('actividadChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Movimientos',
+        data,
+        backgroundColor: '#3B82F6'
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true
+        }
+      }
+    }
+  })
+}
 
 const hayFiltrosActivos = computed(() => {
   return filtros.value.nombre || 
@@ -247,6 +343,8 @@ const hayFiltrosActivos = computed(() => {
 
 onMounted(async () => {
   rol.value = obtenerRolDesdeToken();
+  cargarMetricas();
+  await cargarProductosConStockBajo();
   await cargarProductosPaginados();
   try {
     categoriasDisponibles.value = await obtenerCategorias();
@@ -368,6 +466,11 @@ function irAHistorial() {
   mostrarMenuAdmin.value = false
 }
 
+function irADashboard() {
+  router.push('/dashboard')
+  mostrarMenuAdmin.value = false
+}
+
 function toggleAdminMenu() {
   mostrarMenuAdmin.value = !mostrarMenuAdmin.value
 }
@@ -447,6 +550,16 @@ function cerrarSesion() {
 
 .btn-filter:hover {
   background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.btn-dashboard {
+  background: #833bf6;
+  color: white;
+}
+
+.btn-dashboard:hover {
+  background: #702cdf;
   transform: translateY(-1px);
 }
 
@@ -915,6 +1028,55 @@ function cerrarSesion() {
   color: #374151;
 }
 
+.dashboard-metrics {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
+.card-metric {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  flex: 1 1 220px;
+  text-align: center;
+}
+
+.card-metric h3 {
+  font-size: 1rem;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.card-metric p {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1e40af;
+}
+
+.card-metric.warning {
+  background: #fff7ed;
+  color: #92400e;
+}
+
+.dashboard-activity {
+  margin-bottom: 40px;
+}
+
+.activity-card {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.activity-card h4 {
+  font-size: 1rem;
+  margin-bottom: 15px;
+  color: #374151;
+}
 
 @media (max-width: 768px) {
   .list-container {
@@ -952,4 +1114,43 @@ function cerrarSesion() {
     right: 0.5rem;
   }
 }
+
+.tooltip-wrapper {
+  position: relative;
+}
+
+.tooltip-stock-list {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  color: #1e293b;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  margin-top: 10px;
+  width: max-content;
+  max-width: 300px;
+  font-size: 0.875rem;
+}
+
+.tooltip-stock-list h4 {
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+.tooltip-stock-list ul {
+  padding-left: 1rem;
+  margin: 0;
+}
+
+.tooltip-stock-list li {
+  list-style-type: disc;
+  margin-bottom: 4px;
+}
+
 </style>

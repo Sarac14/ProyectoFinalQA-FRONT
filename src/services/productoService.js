@@ -75,5 +75,15 @@ export async function obtenerCategorias() {
   return response.data
 }
 
+export const obtenerMetricasDashboard = async () => {
+  const response = await axios.get(`${API_URL}/dashboard-metricas`, getAuthHeaders());
+  return response.data
+}
+
+export const obtenerProductosConStockBajo = async () => {
+  const response = await axios.get(`${API_URL}/stock-bajo`, getAuthHeaders())
+  return response.data
+}
+
 
 

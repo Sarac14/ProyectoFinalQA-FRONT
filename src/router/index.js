@@ -4,6 +4,8 @@ import ProductList from '../components/ProductList.vue';
 import LoginView from '../views/LoginView.vue';
 import HistorialPlaceholder from '../components/HistorialPlaceholder.vue';
 import UserAdminView from '../views/UserAdminView.vue';
+import DashboardInventario from '../components/DashboardInventario.vue';
+
 
 import { obtenerToken } from '@/services/authService';
 
@@ -35,6 +37,11 @@ const routes = [
   {
     path: '/admin/usuarios',
     component: UserAdminView,
+    meta: { requiresAuth: true } 
+  },
+  {
+    path: '/dashboard',
+    component: DashboardInventario,
     meta: { requiresAuth: true } 
   }
 ];
