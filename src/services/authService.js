@@ -30,6 +30,19 @@ export function obtenerRolDesdeToken() {
   }
 }
 
+export function obtenerUsuarioDesdeToken() {
+  const token = localStorage.getItem('token')
+  if (!token) return null
+  console.log("token ", token);
+  try {
+    const decoded = jwtDecode(token) 
+    return decoded.nombre
+  } catch (error) {
+    console.error('Token inválido', error)
+    return null
+  }
+}
+
 export function logout() {
   localStorage.removeItem('token')
   localStorage.removeItem('refreshToken')

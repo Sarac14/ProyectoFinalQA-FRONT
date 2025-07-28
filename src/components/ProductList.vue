@@ -77,7 +77,6 @@
           </ul>
         </div>
       </div>
-
     </div>
 
     <div class="dashboard-activity">
@@ -171,6 +170,82 @@
       </div>
     </div>
 
+    <div v-if="mostrarModalMovimiento" class="modal-overlay" @click="cerrarModalMovimiento">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h3>Movimiento de Inventario</h3>
+          <button class="btn-close" @click="cerrarModalMovimiento">×</button>
+        </div>
+        
+        <div class="producto-info">
+          <h4>{{ productoSeleccionado?.nombre }}</h4>
+          <p><strong>Stock actual:</strong> {{ productoSeleccionado?.cantidad }}</p>
+          <p><strong>Categoría:</strong> {{ productoSeleccionado?.categoria }}</p>
+        </div>
+
+        <form @submit.prevent="procesarMovimiento" class="modal-form">
+          <div class="form-group">
+            <label for="tipoMovimiento">Tipo de Movimiento:</label>
+            <select 
+              id="tipoMovimiento"
+              v-model="movimiento.tipoMovimiento"
+              required
+            >
+              <option value="">Seleccionar tipo</option>
+              <option value="ENTRADA">Entrada</option>
+              <option value="SALIDA">Salida</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="cantidad">Cantidad:</label>
+            <input 
+              id="cantidad"
+              v-model.number="movimiento.cantidad" 
+              type="number" 
+              min="1"
+              :max="movimiento.tipoMovimiento === 'SALIDA' ? productoSeleccionado?.cantidad : null"
+              required
+              placeholder="Ingrese la cantidad" 
+            />
+            <small v-if="movimiento.tipoMovimiento === 'SALIDA'" class="help-text">
+              Máximo disponible: {{ productoSeleccionado?.cantidad }}
+            </small>
+          </div>
+
+          <div class="form-group">
+            <label for="motivo">Motivo (opcional):</label>
+            <textarea 
+              id="motivo"
+              v-model="movimiento.motivo"
+              rows="3"
+              maxlength="500"
+              placeholder="Descripción del motivo del movimiento..."
+            ></textarea>
+          </div>
+
+          <div class="resultado-preview" v-if="movimiento.cantidad && movimiento.tipoMovimiento">
+            <p><strong>Stock resultante:</strong> 
+              {{ calcularStockResultante() }} unidades
+            </p>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" @click="cerrarModalMovimiento">
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              class="btn btn-primary"
+              :disabled="!movimiento.tipoMovimiento || !movimiento.cantidad || procesandoMovimiento"
+            >
+              {{ procesandoMovimiento ? 'Procesando...' : 'Confirmar Movimiento' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <div v-if="hayFiltrosActivos" class="filtros-activos">
       <button class="btn-limpiar-filtros" @click="limpiarFiltros">
         <svg xmlns="http://www.w3.org/2000/svg" class="icon-small" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -193,7 +268,10 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="producto in productos" :key="producto.id">
+          <tr v-for="producto in productos" 
+            :key="producto.id" 
+            :style="{ cursor: rol !== 'CLIENTE' ? 'pointer' : 'default' }"
+            @click="rol !== 'CLIENTE' ? seleccionarProducto(producto) : null">
             <td class="font-medium">{{ producto.nombre }}</td>
             <td class="text-gray">{{ producto.descripcion }}</td>
             <td>
@@ -201,11 +279,11 @@
             </td>
             <td class="font-medium">${{ producto.precio.toFixed(2) }}</td>
             <td>
-              <span :class="['stock-badge', producto.cantidad < 10 ? 'low-stock' : 'normal-stock']">
+              <span :class="['stock-badge', producto.cantidad < producto.minimoStock ? 'low-stock' : 'normal-stock']">
                 {{ producto.cantidad }}
               </span>
             </td>
-            <td class="acciones">
+            <td class="acciones" @click.stop>
               <button
                 @click="editarProducto(producto.id)"
                 title="Editar"
@@ -292,8 +370,9 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { logout, obtenerRolDesdeToken } from '@/services/authService'
+import { logout, obtenerRolDesdeToken, obtenerUsuarioDesdeToken } from '@/services/authService'
 import { eliminarProductoPorId, obtenerProductosFiltrados, obtenerCategorias, obtenerProductosPaginados, obtenerMetricasDashboard, obtenerProductosConStockBajo } from '@/services/productoService'
+import { actualizarStock } from '@/services/inventarioService'
 import Chart from 'chart.js/auto'
 
 const productos = ref([])
@@ -301,9 +380,18 @@ const filtros = ref({
   nombre: '',
   categoria: '',
   precioMin: null,
-  precioMax: null
+  precioMax: null,
 })
 const mostrarModalFiltro = ref(false)
+const mostrarModalMovimiento = ref(false)
+const productoSeleccionado = ref(null)
+const procesandoMovimiento = ref(false)
+const movimiento = ref({
+  tipoMovimiento: '',
+  cantidad: null,
+  motivo: ''
+})
+
 const router = useRouter()
 const rol = ref(null)
 const categoriasDisponibles = ref([])
@@ -381,6 +469,88 @@ const hayFiltrosActivos = computed(() => {
          terminoBusqueda.value
 })
 
+function seleccionarProducto(producto) {
+  if (rol.value === 'CLIENTE') return
+  
+  productoSeleccionado.value = producto
+  mostrarModalMovimiento.value = true
+  
+  movimiento.value = {
+    tipoMovimiento: '',
+    cantidad: null,
+    motivo: ''
+  }
+}
+
+function cerrarModalMovimiento() {
+  mostrarModalMovimiento.value = false
+  productoSeleccionado.value = null
+  movimiento.value = {
+    tipoMovimiento: '',
+    cantidad: null,
+    motivo: ''
+  }
+}
+
+function calcularStockResultante() {
+  if (!productoSeleccionado.value || !movimiento.value.cantidad) return 0
+  
+  const stockActual = productoSeleccionado.value.cantidad
+  const cantidad = movimiento.value.cantidad
+  
+  if (movimiento.value.tipoMovimiento === 'ENTRADA') {
+    return stockActual + cantidad
+  } else if (movimiento.value.tipoMovimiento === 'SALIDA') {
+    return stockActual - cantidad
+  }
+  
+  return stockActual
+}
+
+async function procesarMovimiento() {
+  if (!productoSeleccionado.value || !movimiento.value.tipoMovimiento || !movimiento.value.cantidad) {
+    alert('Por favor complete todos los campos obligatorios')
+    return
+  }
+
+  if (movimiento.value.tipoMovimiento === 'SALIDA' && 
+      movimiento.value.cantidad > productoSeleccionado.value.cantidad) {
+    alert('No se puede sacar más cantidad de la disponible en stock')
+    return
+  }
+
+  procesandoMovimiento.value = true
+
+  try {
+    const usuario = obtenerUsuarioDesdeToken()
+    
+    const request = {
+      cantidad: movimiento.value.tipoMovimiento === 'ENTRADA' ? 
+                movimiento.value.cantidad : 
+                -movimiento.value.cantidad,
+      tipoMovimiento: movimiento.value.tipoMovimiento,
+      motivo: movimiento.value.motivo || null,
+      usuarioResponsable: usuario || 'Sistema'
+    }
+
+    await actualizarStock(productoSeleccionado.value.id, request)
+    
+    await cargarProductosPaginados()
+    await cargarMetricas()
+    await cargarProductosConStockBajo()
+    
+    cerrarModalMovimiento()
+    
+    alert(`Movimiento de ${movimiento.value.tipoMovimiento.toLowerCase()} procesado exitosamente`)
+    
+  } catch (error) {
+    console.error('Error al procesar movimiento:', error)
+    alert('Error al procesar el movimiento. Por favor intente nuevamente.')
+  } finally {
+    procesandoMovimiento.value = false
+  }
+}
+
 onMounted(async () => {
   rol.value = obtenerRolDesdeToken();
   cargarMetricas();
@@ -418,7 +588,6 @@ async function cargarProductosPaginados() {
     console.error('Error al cargar productos paginados:', error);
   }
 }
-
 
 function siguientePagina() {
   if (paginaActual.value < totalPaginas.value - 1) {
@@ -1307,5 +1476,194 @@ function actualizarPaginasVisibles() {
   background: linear-gradient(135deg, #667eea, #764ba2);
   border-color: transparent;
   color: white;
+}
+
+.producto-info {
+  background-color: #f1f5f9;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border-left: 4px solid #3b82f6;
+}
+
+.producto-info h4 {
+  margin: 0 0 0.5rem 0;
+  color: #1e293b;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.producto-info p {
+  margin: 0.25rem 0;
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.resultado-preview {
+  background-color: #ecfdf5;
+  border: 1px solid #d1fae5;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin-top: 1rem;
+}
+
+.resultado-preview p {
+  margin: 0;
+  color: #065f46;
+  font-weight: 500;
+}
+
+.help-text {
+  display: block;
+  margin-top: 0.25rem;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-content {
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-form .form-group {
+  margin-bottom: 1rem;
+}
+
+.modal-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.modal-form input,
+.modal-form select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.modal-form input:focus,
+.modal-form select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.product-table tbody tr {
+  position: relative;
+  border: none;
+}
+
+.product-table tbody tr td {
+  vertical-align: middle;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tooltip-wrapper {
+  position: relative;
+}
+
+.tooltip-stock-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  min-width: 250px;
+  margin-top: 0.5rem;
+}
+
+.tooltip-stock-list h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.tooltip-stock-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tooltip-stock-list li {
+  padding: 0.25rem 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.tooltip-stock-list li:last-child {
+  border-bottom: none;
+}
+
+.modal-overlay {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-content {
+    margin: 1rem;
+    max-width: calc(100% - 2rem);
+  }
+  
+  .producto-info {
+    padding: 0.75rem;
+  }
+  
+  .tooltip-stock-list {
+    left: auto;
+    right: 0;
+    min-width: 200px;
+  }
 }
 </style>

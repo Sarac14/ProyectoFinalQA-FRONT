@@ -40,5 +40,18 @@ export const obtenerTopProductosPorValor = async () => {
   return response.data;
 };
 
+export const actualizarStock = async (productoId, stockUpdateRequest) => {
+  try {
+    const response = await axios.patch(
+      `${API_URL}/productos/${productoId}/stock`,
+      stockUpdateRequest,
+      getAuthHeaders()
+    )
+    return response.data
+  } catch (error) {
+    console.error('Error al actualizar stock:', error)
+    throw error
+  }
+}
 
 

@@ -36,6 +36,18 @@
         </div>
       </div>
 
+      <div class="form-group spaced">
+        <label for="minimoStock">Cantidad mínima</label>
+        <input
+          id="minimoStock"
+          v-model="producto.minimoStock"
+          type="number"
+          min="0"
+          required
+        />
+      </div>
+
+
 
       <button type="submit">Guardar</button>
     </form>
@@ -58,7 +70,8 @@ const producto = ref({
   descripcion: '',
   categoria: '',
   precio: null,
-  cantidad: null
+  cantidad: null,
+  minimoStock: null
 })
 
 const camposTexto = ['nombre', 'descripcion', 'categoria']
