@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import ProductForm from '../components/ProductForm.vue';
 import ProductList from '../components/ProductList.vue';
 import LoginView from '../views/LoginView.vue';
-import HistorialPlaceholder from '../components/HistorialPlaceholder.vue';
+import HistorialPlaceholder from '../components/HistorialInventario.vue';
 import UserAdminView from '../views/UserAdminView.vue';
 import DashboardInventario from '../components/DashboardInventario.vue';
 

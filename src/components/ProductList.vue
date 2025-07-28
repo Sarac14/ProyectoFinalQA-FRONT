@@ -232,16 +232,54 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <br>
+    <div class="pagination-container">
+      <div class="pagination-info">
+        Mostrando {{ (paginaActual * tamanoPagina) + 1 }} - {{ Math.min((paginaActual + 1) * tamanoPagina, totalProductos) }} de {{ totalProductos }} productos
+      </div>
+
       <div class="pagination-controls">
-        <button @click="paginaAnterior" :disabled="paginaActual === 0">
-          ⬅ Anterior
+        <button @click="irPrimeraPagina" :disabled="paginaActual === 0" class="btn-pagination">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>
+          </svg>
         </button>
-        <span>Página {{ paginaActual + 1 }} de {{ totalPaginas }}</span>
-        <button @click="siguientePagina" :disabled="paginaActual >= totalPaginas - 1">
-          Siguiente ➡
+
+        <button @click="paginaAnterior" :disabled="paginaActual === 0" class="btn-pagination">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+          Anterior
+        </button>
+
+        <div class="page-numbers">
+          <button 
+            v-for="num in paginasVisibles"
+            :key="num"
+            @click="irPagina(num - 1)"
+            :class="['page-number', { active: num - 1 === paginaActual }]"
+          >
+            {{ num }}
+          </button>
+        </div>
+
+        <button @click="siguientePagina" :disabled="paginaActual >= totalPaginas - 1" class="btn-pagination">
+          Siguiente
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+
+        <button @click="irUltimaPagina" :disabled="paginaActual >= totalPaginas - 1" class="btn-pagination">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
+          </svg>
         </button>
       </div>
     </div>
+
     <div v-if="productos.length === 0" class="no-productos">
       <svg xmlns="http://www.w3.org/2000/svg" class="empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -277,6 +315,8 @@ const totalPaginas = ref(0)
 const tamanoPagina = ref(10)
 const productosStockBajo = ref([])
 const mostrandoTooltipStock = ref(false)
+const totalProductos = ref(0)
+const paginasVisibles = ref([])
 
 const metricas = ref({
   totalProductos: 0,
@@ -372,10 +412,13 @@ async function cargarProductosPaginados() {
     const response = await obtenerProductosPaginados(paginaActual.value, tamanoPagina.value);
     productos.value = response.content;
     totalPaginas.value = response.totalPages;
+    totalProductos.value = response.totalElements;
+    actualizarPaginasVisibles();
   } catch (error) {
     console.error('Error al cargar productos paginados:', error);
   }
 }
+
 
 function siguientePagina() {
   if (paginaActual.value < totalPaginas.value - 1) {
@@ -484,17 +527,45 @@ function cerrarSesion() {
   logout()
   router.push('/login')
 }
+
+function irPrimeraPagina() {
+  paginaActual.value = 0
+  cargarProductosPaginados()
+}
+
+function irUltimaPagina() {
+  paginaActual.value = totalPaginas.value - 1
+  cargarProductosPaginados()
+}
+
+function irPagina(num) {
+  paginaActual.value = num
+  cargarProductosPaginados()
+}
+
+function actualizarPaginasVisibles() {
+  const total = totalPaginas.value
+  const actual = paginaActual.value
+  const delta = 2 
+  let inicio = Math.max(1, actual + 1 - delta)
+  let fin = Math.min(total, actual + 1 + delta)
+
+  paginasVisibles.value = Array.from({ length: fin - inicio + 1 }, (_, i) => i + inicio)
+}
+
 </script>
 
 <style scoped>
 .list-container {
-  max-width: 95vw;
+  width: 90vw;
   min-height: 90vh;
   margin: 1rem auto;
-  padding: 2rem;
+  padding: 20px;
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow-x: hidden;
+
 }
 
 .top-bar {
@@ -1153,4 +1224,88 @@ function cerrarSesion() {
   margin-bottom: 4px;
 }
 
+.pagination-container {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.pagination-info {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-pagination {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  background: white;
+  color: #374151;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-pagination:hover:not(:disabled) {
+  border-color: #667eea;
+  color: #667eea;
+  transform: translateY(-2px);
+}
+
+.btn-pagination:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-pagination svg {
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0 1rem;
+}
+
+.page-number {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 2px solid #e5e7eb;
+  background: white;
+  color: #374151;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-number:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.page-number.active {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-color: transparent;
+  color: white;
+}
 </style>
