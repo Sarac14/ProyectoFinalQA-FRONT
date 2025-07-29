@@ -525,9 +525,7 @@ async function procesarMovimiento() {
     const usuario = obtenerUsuarioDesdeToken()
     
     const request = {
-      cantidad: movimiento.value.tipoMovimiento === 'ENTRADA' ? 
-                movimiento.value.cantidad : 
-                -movimiento.value.cantidad,
+      cantidad: movimiento.value.cantidad,
       tipoMovimiento: movimiento.value.tipoMovimiento,
       motivo: movimiento.value.motivo || null,
       usuarioResponsable: usuario || 'Sistema'
@@ -580,7 +578,7 @@ async function aplicarFiltros() {
 async function cargarProductosPaginados() {
   try {
     const response = await obtenerProductosPaginados(paginaActual.value, tamanoPagina.value);
-    productos.value = response.content;
+    productos.value = response.content.sort((a, b) => b.id - a.id);
     totalPaginas.value = response.totalPages;
     totalProductos.value = response.totalElements;
     actualizarPaginasVisibles();
