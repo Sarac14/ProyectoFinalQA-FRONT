@@ -1,45 +1,34 @@
-import api from './api'; // Usar la misma instancia que funciona
+import api from './api';
 
-// ==========================
-// Funciones del servicio
-// ==========================
-
-// Obtener un producto por ID
 export async function obtenerProductoPorId(id) {
   const response = await api.get(`/productos/${id}`);
   return response.data;
 }
 
-// Crear producto
 export async function crearProducto(producto) {
   const response = await api.post('/productos', producto);
   return response.data;
 }
 
-// Obtener todos los productos
 export async function obtenerProductos() {
   const response = await api.get('/productos');
   return response.data;
 }
 
-// Paginación de productos
 export async function obtenerProductosPaginados(page = 0, size = 10) {
   const response = await api.get(`/productos?page=${page}&size=${size}`);
   return response.data;
 }
 
-// Actualizar producto
 export async function actualizarProducto(id, data) {
   const response = await api.put(`/productos/${id}`, data);
   return response.data;
 }
 
-// Eliminar producto por ID
 export async function eliminarProductoPorId(id) {
   await api.delete(`/productos/${id}`);
 }
 
-// Productos filtrados
 export async function obtenerProductosFiltrados(filtros) {
   const filters = filtros.value ?? filtros;
   const hasFilters =
@@ -67,19 +56,16 @@ export async function obtenerProductosFiltrados(filtros) {
   return response.data.content;
 }
 
-// Listar categorías
 export async function obtenerCategorias() {
   const response = await api.get('/productos/listar-categorias');
   return response.data;
 }
 
-// Métricas del dashboard
 export async function obtenerMetricasDashboard() {
   const response = await api.get('/productos/dashboard-metricas');
   return response.data;
 }
 
-// Productos con stock bajo
 export async function obtenerProductosConStockBajo() {
   const response = await api.get('/productos/stock-bajo');
   return response.data;

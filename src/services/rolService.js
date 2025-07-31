@@ -1,6 +1,5 @@
-import api from './api'; // Usar la misma instancia que funciona
+import api from './api';
 
-// Obtener roles
 export const obtenerRoles = async () => {
   try {
     const response = await api.get('/roles');
