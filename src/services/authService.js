@@ -4,6 +4,7 @@
 
   export async function login(email, password) {
     const response = await api.post('/auth/login', { email, password });
+    console.log("Inicio de sesion");
     return response.data;
   }
 
