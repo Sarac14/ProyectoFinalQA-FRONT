@@ -1,42 +1,40 @@
-import axios from 'axios';
-import { obtenerToken } from './authService'
+import api from './api'; // Usar la misma instancia que funciona
 
-const API_URL = 'http://localhost:8080/api/usuarios'
+// ==========================
+// Funciones del servicio
+// ==========================
 
-function getAuthHeaders() {
-  const token = obtenerToken()
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  }
-}
-
+// Listar usuarios con paginación
 export const obtenerUsuarios = async (page = 0, size = 10) => {
-  const response = await axios.get(`${API_URL}?page=${page}&size=${size}`, getAuthHeaders());
+  const response = await api.get(`/usuarios?page=${page}&size=${size}`);
   return response.data;
 };
 
+// Obtener usuario por ID
 export const obtenerUsuarioPorId = async (id) => {
-  const response = await axios.get(`${API_URL}/${id}`, getAuthHeaders());
+  const response = await api.get(`/usuarios/${id}`);
   return response.data;
 };
 
+// Crear usuario
 export const crearUsuario = async (usuario) => {
-  const response = await axios.post(API_URL, usuario, getAuthHeaders());
+  const response = await api.post('/usuarios', usuario);
   return response.data;
 };
 
+// Actualizar usuario
 export const actualizarUsuario = async (id, usuario) => {
-  const response = await axios.put(`${API_URL}/${id}`, usuario, getAuthHeaders());
+  const response = await api.put(`/usuarios/${id}`, usuario);
   return response.data;
 };
 
+// Cambiar estado de usuario
 export const actualizarEstadoUsuario = async (id, nuevoEstado) => {
-  const response = await axios.put(`${API_URL}/${id}/estado/${nuevoEstado}`, null, getAuthHeaders());
+  const response = await api.put(`/usuarios/${id}/estado/${nuevoEstado}`);
   return response.data;
 };
 
+// Eliminar usuario
 export const eliminarUsuario = async (id) => {
-  await axios.delete(`${API_URL}/${id}`, getAuthHeaders());
+  await api.delete(`/usuarios/${id}`);
 };

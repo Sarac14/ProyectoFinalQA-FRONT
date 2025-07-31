@@ -1,18 +1,12 @@
-import axios from 'axios';
-import { obtenerToken } from './authService'
+import api from './api'; // Usar la misma instancia que funciona
 
-const API_URL = 'http://localhost:8080/api/roles'
-
-function getAuthHeaders() {
-  const token = obtenerToken()
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  }
-}
-
+// Obtener roles
 export const obtenerRoles = async () => {
-    const response = await axios.get(API_URL, getAuthHeaders());
+  try {
+    const response = await api.get('/roles');
     return response.data;
+  } catch (error) {
+    console.error('Error al obtener roles:', error);
+    throw error;
+  }
 };

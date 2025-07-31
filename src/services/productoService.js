@@ -1,89 +1,86 @@
-import axios from 'axios'
-import { obtenerToken } from './authService'
+import api from './api'; // Usar la misma instancia que funciona
 
-const API_URL = 'http://localhost:8080/api/productos'
+// ==========================
+// Funciones del servicio
+// ==========================
 
-function getAuthHeaders() {
-  const token = obtenerToken()
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  }
-}
-
+// Obtener un producto por ID
 export async function obtenerProductoPorId(id) {
-  const response = await axios.get(`${API_URL}/${id}`, getAuthHeaders())
-  return response.data
+  const response = await api.get(`/productos/${id}`);
+  return response.data;
 }
 
+// Crear producto
 export async function crearProducto(producto) {
-  const response = await axios.post(API_URL, producto, getAuthHeaders())
-  return response.data
+  const response = await api.post('/productos', producto);
+  return response.data;
 }
 
+// Obtener todos los productos
 export async function obtenerProductos() {
-  const response = await axios.get(API_URL, getAuthHeaders())
-  return response.data
+  const response = await api.get('/productos');
+  return response.data;
 }
 
+// Paginación de productos
 export async function obtenerProductosPaginados(page = 0, size = 10) {
-  const response = await axios.get(`${API_URL}?page=${page}&size=${size}`, getAuthHeaders());
-  return response.data; 
+  const response = await api.get(`/productos?page=${page}&size=${size}`);
+  return response.data;
 }
 
-
+// Actualizar producto
 export async function actualizarProducto(id, data) {
-  const response = await axios.put(`${API_URL}/${id}`, data, getAuthHeaders())
-  return response.data
+  const response = await api.put(`/productos/${id}`, data);
+  return response.data;
 }
 
+// Eliminar producto por ID
 export async function eliminarProductoPorId(id) {
-  await axios.delete(`${API_URL}/${id}`, getAuthHeaders())
+  await api.delete(`/productos/${id}`);
 }
 
+// Productos filtrados
 export async function obtenerProductosFiltrados(filtros) {
   const filters = filtros.value ?? filtros;
+  const hasFilters =
+    (filters.nombre && filters.nombre.trim() !== '') ||
+    (filters.categoria && filters.categoria.trim() !== '') ||
+    filters.precioMin != null ||
+    filters.precioMax != null ||
+    (filters.busqueda && filters.busqueda.trim() !== '');
 
-const hasFilters =
-  (filters.nombre && filters.nombre.trim() !== '') ||
-  (filters.categoria && filters.categoria.trim() !== '') ||
-  filters.precioMin != null ||
-  filters.precioMax != null ||
-  (filters.busqueda && filters.busqueda.trim() !== '');
-
-if (!hasFilters) {
-  const response = await axios.get(`${API_URL}`, getAuthHeaders());
-  return response.data; 
-}
+  if (!hasFilters) {
+    const response = await api.get('/productos');
+    return response.data;
+  }
 
   const params = new URLSearchParams();
-  if (filters.nombre && filters.nombre.trim() !== '') params.append('nombre', filters.nombre);
-  if (filters.categoria && filters.categoria.trim() !== '') params.append('categoria', filters.categoria);
+  if (filters.nombre?.trim()) params.append('nombre', filters.nombre);
+  if (filters.categoria?.trim()) params.append('categoria', filters.categoria);
   if (filters.precioMin != null) params.append('precioMin', filters.precioMin);
   if (filters.precioMax != null) params.append('precioMax', filters.precioMax);
-  if (filters.busqueda && filters.busqueda.trim() !== '') params.append('busqueda', filters.busqueda); 
+  if (filters.busqueda?.trim()) params.append('busqueda', filters.busqueda);
   params.append('page', 0);
   params.append('size', 100);
 
-  const response = await axios.get(`${API_URL}/filtro?${params.toString()}`, getAuthHeaders());
+  const response = await api.get(`/productos/filtro?${params.toString()}`);
   return response.data.content;
 }
 
+// Listar categorías
 export async function obtenerCategorias() {
-  const response = await axios.get(`${API_URL}/listar-categorias`, getAuthHeaders());
-  return response.data
+  const response = await api.get('/productos/listar-categorias');
+  return response.data;
 }
 
-export const obtenerMetricasDashboard = async () => {
-  const response = await axios.get(`${API_URL}/dashboard-metricas`, getAuthHeaders());
-  return response.data
+// Métricas del dashboard
+export async function obtenerMetricasDashboard() {
+  const response = await api.get('/productos/dashboard-metricas');
+  return response.data;
 }
 
-export const obtenerProductosConStockBajo = async () => {
-  const response = await axios.get(`${API_URL}/stock-bajo`, getAuthHeaders())
-  return response.data
+// Productos con stock bajo
+export async function obtenerProductosConStockBajo() {
+  const response = await api.get('/productos/stock-bajo');
+  return response.data;
 }
-
-
-

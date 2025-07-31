@@ -538,6 +538,13 @@ async function procesarMovimiento() {
     await cargarProductosConStockBajo()
     
     cerrarModalMovimiento()
+    const filtrosBusqueda = {
+      ...filtros.value,
+      busqueda: terminoBusqueda.value
+    }
+    const response = await obtenerProductosFiltrados(filtrosBusqueda)
+    productos.value = response.content || response
+    cargarMetricas()
     
     alert(`Movimiento de ${movimiento.value.tipoMovimiento.toLowerCase()} procesado exitosamente`)
     
@@ -1300,14 +1307,17 @@ function actualizarPaginasVisibles() {
 }
 
 .dashboard-activity {
-  margin-bottom: 40px;
+  margin-bottom: 30px; 
+  display: flex;
+  justify-content: center; 
 }
 
 .activity-card {
   background: white;
-  padding: 20px 30px;
+  padding: 15px 20px; 
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  width: 900px; 
 }
 
 .activity-card h4 {
