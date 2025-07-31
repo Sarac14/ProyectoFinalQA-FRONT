@@ -1,0 +1,85 @@
+name: Frontend CI/CD Pipeline
+
+on:
+  push:
+    branches: ["dev", "main"]
+
+permissions:
+  contents: write
+  actions: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/dev'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Playwright tests
+        run: npx playwright test
+        continue-on-error: true
+
+      - name: Save Playwright reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
+
+      - name: Create Pull Request from dev to main
+        if: github.ref == 'refs/heads/dev' && always()
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: dev
+          destination_branch: main
+          pr_title: "Auto PR: Frontend dev to main"
+          pr_body: |
+            Playwright tests completed!
+            
+            📊 Tests ejecutados:
+            - ✅ Playwright E2E Tests
+          github_token: ${{ secrets.PERSONAL_TOKEN }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build & Push Frontend Image
+        run: |
+          docker build -t smct0001/vue-app:latest .
+          docker push smct0001/vue-app:latest
+
+      - name: Trigger Backend Deploy Frontend
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.BACKEND_REPO_TOKEN }}
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: 'Higinio01',
+              repo: 'ProyectoFinalQA',
+              workflow_id: 'ci-cd.yml',  
+              ref: 'main'})
